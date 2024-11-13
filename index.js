@@ -16,7 +16,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Configuração do Express
 app.use(cors({
-    origin: 'https://back-end-minha-plataforma-app.vercel.app/', // Atualize com a URL do seu frontend na Vercel
+    origin: 'http://localhost:3000', // Permitir o frontend acessar o backend
     credentials: true
 }));
 
