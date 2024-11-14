@@ -1,16 +1,16 @@
-// config/passport.js
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const User = require('../models/User'); // Certifique-se de ter um modelo de usuário configurado
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import User from '../models/User.js'; // Certifique-se de ter um modelo de usuário configurado corretamente
 
+import 'dotenv/config';
 
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: '/auth/google/callback',
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: '/auth/google/callback',
 }, async (accessToken, refreshToken, profile, done) => {
   try {
-    // Aqui você pode buscar ou criar um usuário no banco de dados
+    // Buscar ou criar um usuário no banco de dados
     let user = await User.findOne({ googleId: profile.id });
     if (!user) {
       user = new User({
@@ -40,3 +40,5 @@ passport.deserializeUser(async (id, done) => {
     done(err, null);
   }
 });
+
+export default passport;

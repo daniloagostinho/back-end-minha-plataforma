@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
   googleId: String,
@@ -7,4 +7,6 @@ const userSchema = new mongoose.Schema({
 });
 
 // Verifica se o modelo já foi criado antes de definir novamente
-module.exports = mongoose.models.User || mongoose.model('User', userSchema);
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+
+export default User; // Exportação padrão para permitir a importação correta
