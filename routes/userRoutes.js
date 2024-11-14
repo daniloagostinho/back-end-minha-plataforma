@@ -4,7 +4,6 @@ import User from '../models/User.js'; // Importe o modelo de usuário
 
 const router = express.Router();
 
-// Middleware para garantir que o usuário está autenticado
 const ensureAuthenticated = (req, res, next) => {
   if (req.isAuthenticated()) {
     return next();
@@ -12,7 +11,6 @@ const ensureAuthenticated = (req, res, next) => {
     return res.status(401).json({ error: 'Usuário não autenticado' });
   }
 };
-
 
 // Rota para buscar informações do usuário
 router.get('/api/user', ensureAuthenticated, async (req, res) => {
