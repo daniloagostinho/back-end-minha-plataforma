@@ -36,7 +36,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Configuração do Express
 app.use(cors({
-    origin: 'https://67b8-2804-431-cff2-1561-4475-6552-c37-a464.ngrok-free.app',
+    origin: 'https://back-end-minha-plataforma-app.vercel.app',
     credentials: true
 }));
 
@@ -94,7 +94,7 @@ app.post('/api/pagamento/pix', async (req, res) => {
             description: descricao,
             payment_method_id: 'pix',
             payer: { email: email },
-            notification_url: 'https://67b8-2804-431-cff2-1561-4475-6552-c37-a464.ngrok-free.app/v1/webhook'
+            notification_url: 'https://back-end-minha-plataforma-app.vercel.app/v1/webhook'
         };
 
 
