@@ -1,12 +1,11 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
-  googleId: String,
-  name: String,
-  email: String,
+    nome: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    senha: { type: String, required: true }
 });
 
-// Verifica se o modelo já foi criado antes de definir novamente
+// Use uma exportação padrão
 const User = mongoose.models.User || mongoose.model('User', userSchema);
-
-export default User; // Exportação padrão para permitir a importação correta
+export default User;

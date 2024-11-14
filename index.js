@@ -8,12 +8,19 @@ import './config/passport.js';
 import { MercadoPagoConfig, Payment, PaymentMethod, CardToken, Preference } from 'mercadopago';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
-import User from './models/User.js';
 import PaymentModel from './models/Payment.js';
+import bcrypt from 'bcrypt';
 
 import { v4 as uuid } from 'uuid';
 
+import userRoutes from './routes/userRoutes.js';
+import userSignUp from './routes/userSignUp.js';
+
+
 dotenv.config();
+
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+
 
 const app = express();
 
@@ -36,7 +43,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Configuração do Express
 app.use(cors({
-    origin: 'https://back-end-minha-plataforma-app.vercel.app',
+    origin: 'http://localhost:3000',
     credentials: true
 }));
 
@@ -49,6 +56,16 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.json());
+app.use(userRoutes);
+app.use(userSignUp);
+
+// Modelo do Usuário
+const userSchema = new mongoose.Schema({
+    nome: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    senha: { type: String, required: true }
+});
+
 
 // Rota de teste
 app.get('/', (req, res) => {
@@ -59,7 +76,7 @@ app.get('/', (req, res) => {
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 app.get('/auth/google/callback', passport.authenticate('google'), (req, res) => {
-    res.redirect('https://front-end-minha-plataforma.vercel.app/dashboard');
+    res.redirect('http://localhost:5000/dashboard');
 });
 
 // Rota de logout
@@ -94,16 +111,16 @@ app.post('/api/pagamento/pix', async (req, res) => {
             description: descricao,
             payment_method_id: 'pix',
             payer: { email: email },
-            notification_url: 'https://back-end-minha-plataforma-app.vercel.app/v1/webhook'
+            notification_url: 'http://localhost:5000/v1/webhook'
         };
 
 
-        const requestOptions  =  { 
-            idempotencyKey : uuidv4() , 
-        } ;
+        const requestOptions = {
+            idempotencyKey: uuidv4(),
+        };
 
         // Criar pagamento com PIX
-        const response = await payment.create({ body,  requestOptions});
+        const response = await payment.create({ body, requestOptions });
         res.status(200).json({ message: 'Pagamento criado com sucesso', response });
     } catch (error) {
         console.error('Erro ao criar pagamento:', error);
@@ -117,27 +134,37 @@ app.get('/v1/webhook', async (req, res) => {
     res.send("POST OK");
 });
 
-// Rota para verificar o status do pagamento
-// app.get('/api/pagamento/status/:id', async (req, res) => {
-//     try {
-//         const paymentId = req.params.id;
+// Rota de cadastro de usuário
+app.post('/api/signup', async (req, res) => {
+    try {
+        const { nome, email, senha } = req.body;
 
-//         if (!paymentId || paymentId === 'null' || paymentId === 'undefined') {
-//             return res.status(400).json({ error: 'ID de pagamento inválido ou não fornecido' });
-//         }
+        // Verificar se o email já está em uso
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ error: 'Este email já está em uso.' });
+        }
 
-//         const paymentDetails = await payment.get(paymentId);
+        // Criptografar a senha
+        const hashedPassword = await bcrypt.hash(senha, 10);
 
-//         if (paymentDetails && paymentDetails.body && paymentDetails.body.status) {
-//             res.status(200).json({ status: paymentDetails.body.status });
-//         } else {
-//             res.status(404).json({ error: 'Pagamento não encontrado' });
-//         }
-//     } catch (error) {
-//         console.error('Erro ao verificar o status do pagamento:', error);
-//         res.status(500).json({ error: 'Erro ao verificar o status do pagamento' });
-//     }
-// });
+        // Criar um novo usuário
+        const newUser = new User({
+            nome,
+            email,
+            senha: hashedPassword
+        });
+
+        // Salvar o usuário no banco de dados
+        await newUser.save();
+
+        res.status(201).json({ message: 'Usuário cadastrado com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao cadastrar usuário:', error);
+        res.status(500).json({ error: 'Erro ao cadastrar usuário. Tente novamente.' });
+    }
+});
+
 
 // Inicia o servidor
 const PORT = process.env.PORT || 5000;
