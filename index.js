@@ -59,7 +59,7 @@ app.get('/', (req, res) => {
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 app.get('/auth/google/callback', passport.authenticate('google'), (req, res) => {
-    res.redirect('https://back-end-minha-plataforma-app.vercel.app/dashboard');
+    res.redirect('https://front-end-minha-plataforma.vercel.app/dashboard');
 });
 
 // Rota de logout
