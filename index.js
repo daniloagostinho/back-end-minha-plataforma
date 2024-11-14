@@ -15,7 +15,7 @@ import { v4 as uuid } from 'uuid';
 
 import userRoutes from './routes/userRoutes.js';
 import userSignUp from './routes/userSignUp.js';
-
+import webhooks from './routes/webhooks.js'
 
 dotenv.config();
 
@@ -58,6 +58,7 @@ app.use(passport.session());
 app.use(express.json());
 app.use(userRoutes);
 app.use(userSignUp);
+app.use('/webhook', webhooks)
 
 // Modelo do Usuário
 const userSchema = new mongoose.Schema({
