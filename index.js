@@ -130,6 +130,44 @@ app.post('/api/pagamento/pix', async (req, res) => {
     }
 });
 
+// Rota para criar um pagamento com Cartão de Crédito
+app.post('/api/pagamento/cartao', async (req, res) => {
+    try {
+        const { transaction_amount, token, description, installments, payment_method_id, email } = req.body;
+
+        // Validação simples de e-mail
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ error: 'E-mail inválido' });
+        }
+
+        // Objeto de pagamento com cartão de crédito
+        const body = {
+            transaction_amount: parseFloat(transaction_amount),
+            token: token,
+            description: description,
+            installments: parseInt(installments),
+            payment_method_id: payment_method_id,
+            payer: { email: email },
+        };
+
+        const requestOptions = {
+            idempotencyKey: uuidv4(),
+        };
+
+        // Criar pagamento com Cartão de Crédito
+        const response = await payment.create({ body, requestOptions });
+        if (response.body.status === 'approved') {
+            res.status(200).json({ message: 'Pagamento aprovado', response });
+        } else {
+            res.status(400).json({ message: 'Pagamento não aprovado', response });
+        }
+    } catch (error) {
+        console.error('Erro ao processar pagamento com cartão de crédito:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 // Inicia o servidor
 const PORT = process.env.PORT || 5000;
