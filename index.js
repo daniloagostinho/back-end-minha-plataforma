@@ -130,6 +130,34 @@ app.post('/api/pagamento/pix', async (req, res) => {
     }
 });
 
+app.post('/api/payment-method', async (req, res) => {
+  const { bin } = req.body; // Obtém o bin do corpo da requisição
+
+  try {
+    // Faz a requisição para a API do Mercado Pago com o bin
+    const response = await fetch(`https://api.mercadopago.com/v1/payment_methods?bin=${bin}`, {
+      headers: {
+        Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`, // Access token do Mercado Pago
+      },
+    });
+
+    const data = await response.json();
+    
+    if (data && data[0]) {
+      // Se encontrar o método de pagamento, retorna o payment_method_id
+      res.status(200).json({ paymentMethodId: data[0].id });
+    } else {
+      // Se não encontrar, retorna um erro 404
+      res.status(404).json({ error: 'Método de pagamento não encontrado' });
+    }
+  } catch (error) {
+    // Trata erros de requisição ou do servidor
+    console.error('Erro ao obter o método de pagamento:', error);
+    res.status(500).json({ error: 'Erro ao obter o método de pagamento' });
+  }
+});
+
+
 // Rota para criar um pagamento com Cartão de Crédito
 app.post('/api/pagamento/cartao', async (req, res) => {
     try {
@@ -166,6 +194,29 @@ app.post('/api/pagamento/cartao', async (req, res) => {
         console.error('Erro ao processar pagamento com cartão de crédito:', error);
         res.status(500).json({ error: error.message });
     }
+});
+
+// Crie uma nova rota no seu backend para obter o método de pagamento
+app.post('/api/payment-method', async (req, res) => {
+  const { bin } = req.body;
+
+  try {
+    const response = await fetch(`https://api.mercadopago.com/v1/payment_methods?bin=${bin}`, {
+      headers: {
+        Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`, // Use seu accessToken do Mercado Pago
+      },
+    });
+
+    const data = await response.json();
+    if (data && data[0]) {
+      res.status(200).json({ paymentMethodId: data[0].id }); // Retorna o payment_method_id
+    } else {
+      res.status(404).json({ error: 'Método de pagamento não encontrado' });
+    }
+  } catch (error) {
+    console.error('Erro ao obter o método de pagamento:', error);
+    res.status(500).json({ error: 'Erro ao obter o método de pagamento' });
+  }
 });
 
 
