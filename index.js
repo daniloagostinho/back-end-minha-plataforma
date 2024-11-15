@@ -114,7 +114,7 @@ app.post('/api/pagamento/pix', async (req, res) => {
             description: descricao,
             payment_method_id: 'pix',
             payer: { email: email },
-            notification_url: 'http://localhost:5000/v1/webhook'
+            notification_url: 'https://back-end-minha-plataforma-app.vercel.app/webhook'
         };
 
 
