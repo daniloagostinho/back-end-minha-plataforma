@@ -42,32 +42,27 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Rota para buscar o status do pagamento
-router.get('/status/:paymentId', async (req, res) => {
+router.get('/api/pagamento/status/:paymentId', async (req, res) => {
     const { paymentId } = req.params;
-
+  
     try {
-        // Faça uma requisição à API do Mercado Pago para obter o status do pagamento
-        const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`, // Use seu token de acesso do Mercado Pago
-            },
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            // Retorne o status do pagamento
-            res.status(200).json({ status: data.status, detail: data.status_detail });
-        } else {
-            // Se a requisição falhou, retorne o erro
-            res.status(400).json({ error: data.message || 'Erro ao buscar status do pagamento.' });
-        }
+      const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
+        },
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        res.status(200).json(data);
+      } else {
+        res.status(response.status).json({ error: data.error });
+      }
     } catch (error) {
-        console.error('Erro ao buscar status do pagamento:', error);
-        res.status(500).json({ error: 'Erro ao buscar status do pagamento.' });
+      res.status(500).json({ error: 'Erro ao buscar status do pagamento.' });
     }
-});
+  });
 
 export default router;
