@@ -1,10 +1,9 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken'; // Importe o jsonwebtoken
 import User from '../models/User.js';
 
 const router = express.Router();
-const JWT_SECRET = 'sua_chave_secreta_aqui'; // Substitua por uma chave secreta mais segura
 
 // Rota para cadastro
 router.post('/api/signup', async (req, res) => {
@@ -28,35 +27,21 @@ router.post('/api/signup', async (req, res) => {
     });
     await newUser.save();
 
-    res.status(201).json({ message: 'Usuário cadastrado com sucesso!' });
+    // Gerar o token JWT
+    const jwtToken = jwt.sign(
+      { id: newUser._id }, // Payload com o ID do usuário
+      process.env.JWT_SECRET, // Chave secreta para assinar o token (defina isso no seu arquivo .env)
+      { expiresIn: '1h' } // O token expira em 1 hora
+    );
+
+    res.status(201).json({
+      message: 'Usuário cadastrado com sucesso!',
+      token: jwtToken, // Retorna o token gerado
+    });
+
   } catch (error) {
+    console.error('Erro ao cadastrar usuário:', error);
     res.status(500).json({ error: 'Erro ao cadastrar usuário.' });
-  }
-});
-
-// Rota para login
-router.post('/api/login', async (req, res) => {
-  const { email, senha } = req.body;
-
-  try {
-    // Verificar se o usuário existe
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ error: 'Email ou senha incorretos.' });
-    }
-
-    // Verificar a senha
-    const isPasswordValid = await bcrypt.compare(senha, user.senha);
-    if (!isPasswordValid) {
-      return res.status(400).json({ error: 'Email ou senha incorretos.' });
-    }
-
-    // Gerar um token JWT
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1h' });
-
-    res.status(200).json({ token, user: { nome: user.nome, email: user.email } });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao realizar login.' });
   }
 });
 

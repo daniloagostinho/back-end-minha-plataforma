@@ -15,6 +15,7 @@ import { v4 as uuid } from 'uuid';
 
 import userRoutes from './routes/userRoutes.js';
 import userSignUp from './routes/userSignUp.js';
+import userLogin from './routes/userLogin.js';
 import webhooks from './routes/webhooks.js'
 
 dotenv.config();
@@ -43,7 +44,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Configuração do Express
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: 'https://front-end-minha-plataforma.vercel.app',
     credentials: true
 }));
 
@@ -58,6 +59,7 @@ app.use(passport.session());
 app.use(express.json());
 app.use(userRoutes);
 app.use(userSignUp);
+app.use(userLogin);
 app.use('/webhook', webhooks)
 
 // Modelo do Usuário
@@ -133,37 +135,6 @@ app.post('/api/pagamento/pix', async (req, res) => {
 app.get('/v1/webhook', async (req, res) => {
     console.log("body webhook __>>>>>>>>>>>>>>>>>>>>>>>>>>>", req.body);
     res.send("POST OK");
-});
-
-// Rota de cadastro de usuário
-app.post('/api/signup', async (req, res) => {
-    try {
-        const { nome, email, senha } = req.body;
-
-        // Verificar se o email já está em uso
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ error: 'Este email já está em uso.' });
-        }
-
-        // Criptografar a senha
-        const hashedPassword = await bcrypt.hash(senha, 10);
-
-        // Criar um novo usuário
-        const newUser = new User({
-            nome,
-            email,
-            senha: hashedPassword
-        });
-
-        // Salvar o usuário no banco de dados
-        await newUser.save();
-
-        res.status(201).json({ message: 'Usuário cadastrado com sucesso!' });
-    } catch (error) {
-        console.error('Erro ao cadastrar usuário:', error);
-        res.status(500).json({ error: 'Erro ao cadastrar usuário. Tente novamente.' });
-    }
 });
 
 
