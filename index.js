@@ -43,24 +43,12 @@ mongoose.connect(process.env.MONGO_URI)
     .catch(err => console.error('Erro ao conectar ao MongoDB:', err));
 
 // Configuração do Express
-const allowedOrigins = [
-    'http://localhost:3000',
-    'https://front-end-minha-plataforma.vercel.app'
-];
-
 app.use(cors({
-    origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true
+    origin: '*', // Permite qualquer origem
+    credentials: true // Se precisar suportar cookies ou cabeçalhos de autenticação
 }));
-
 app.use(session({
-    secret: '@88Ab15cd98Ef12',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false
 }));
