@@ -59,7 +59,7 @@ app.use(express.json());
 app.use(userRoutes);
 app.use(userSignUp);
 app.use(userLogin);
-app.use('/webhook', webhooks)
+app.use('/webhook', webhooks);
 
 // Modelo do Usuário
 const userSchema = new mongoose.Schema({
@@ -128,12 +128,6 @@ app.post('/api/pagamento/pix', async (req, res) => {
         console.error('Erro ao criar pagamento:', error);
         res.status(500).json({ error: error.message });
     }
-});
-
-// Webhook para receber notificações do Mercado Pago
-app.get('/v1/webhook', async (req, res) => {
-    console.log("body webhook __>>>>>>>>>>>>>>>>>>>>>>>>>>>", req.body);
-    res.send("POST OK");
 });
 
 
