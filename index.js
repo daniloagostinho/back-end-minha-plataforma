@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 import session from 'express-session';
 import passport from 'passport';
 import './config/passport.js';
-import { MercadoPagoConfig, Payment, PaymentMethod, CardToken, Preference } from 'mercadopago';
+import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import PaymentModel from './models/Payment.js';
@@ -17,6 +17,7 @@ import userRoutes from './routes/userRoutes.js';
 import userSignUp from './routes/userSignUp.js';
 import userLogin from './routes/userLogin.js';
 import webhooks from './routes/webhooks.js'
+
 
 dotenv.config();
 
@@ -33,9 +34,6 @@ const client = new MercadoPagoConfig({
 
 // Inicializando os objetos da API do Mercado Pago
 const payment = new Payment(client);
-const paymentMethod = new PaymentMethod(client);
-const cardToken = new CardToken(client);
-const preference = new Preference(client);
 
 // Configuração do Mongoose
 mongoose.connect(process.env.MONGO_URI)
@@ -130,147 +128,32 @@ app.post('/api/pagamento/pix', async (req, res) => {
     }
 });
 
-app.post('/api/payment-method', async (req, res) => {
-    const { bin } = req.body; // Obtém o bin do corpo da requisição
+app.post('/api/process_payment', async (req, res) => {
+    const payment = new Payment(client);
 
     try {
-        // Verifica se o bin foi enviado corretamente
-        if (!bin || bin.length !== 6) {
-            return res.status(400).json({ error: 'BIN inválido. Deve ter 6 dígitos.' });
-        }
+        // Criar pagamento com os dados enviados do front-end
+        const response = await payment.create({ body: req.body });
 
-        // Faz a requisição para a API do Mercado Pago com o bin
-        const response = await fetch(`https://api.mercadopago.com/v1/payment_methods?bin=${bin}`, {
-            headers: {
-                Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`, // Access token do Mercado Pago
-            },
-        });
-
-        const data = await response.json();
-
-        if (data && data.length > 0) {
-            // Se encontrar o método de pagamento, retorna o payment_method_id
-            res.status(200).json({ paymentMethodId: data[0].id });
+        if (response.body.status === 'approved') {
+            return res.status(200).json({
+                message: 'Pagamento aprovado',
+                status: response.body.status,
+                status_detail: response.body.status_detail,
+            });
         } else {
-            // Se não encontrar, retorna um erro 404
-            res.status(404).json({ error: 'Método de pagamento não encontrado' });
+            return res.status(400).json({
+                message: 'Pagamento não aprovado',
+                status: response.body.status,
+                status_detail: response.body.status_detail,
+            });
         }
     } catch (error) {
-        // Trata erros de requisição ou do servidor
-        console.error('Erro ao obter o método de pagamento:', error);
-        res.status(500).json({ error: 'Erro ao obter o método de pagamento' });
-    }
-});
-
-// Endpoint para processar o pagamento com Cartão de Crédito
-app.post('/api/pagamento/cartao', async (req, res) => {
-  try {
-    const {
-      transaction_amount, // Valor da transação
-      token, // Token do cartão gerado no front-end
-      description, // Descrição do pagamento
-      installments, // Número de parcelas
-      payment_method_id, // Método de pagamento (e.g., visa, mastercard)
-      email, // E-mail do comprador
-    } = req.body;
-
-    // Cria o objeto de pagamento
-    const paymentData = {
-      transaction_amount: parseFloat(transaction_amount),
-      token: token,
-      description: description,
-      installments: parseInt(installments),
-      payment_method_id: payment_method_id,
-      payer: {
-        email: email,
-      },
-      external_reference: uuidv4(), // Referência única para identificar o pagamento
-    };
-
-    const requestOptions = {
-      idempotencyKey: uuidv4(),
-    };
-
-    // Faz a requisição para criar o pagamento
-    const response = await payment.create({ body: paymentData, requestOptions });
-
-    // Verifica se o pagamento foi aprovado
-    if (response.body.status === 'approved') {
-      res.status(200).json({ message: 'Pagamento aprovado', response: response.body });
-    } else {
-      res.status(400).json({
-        message: 'Pagamento não aprovado',
-        status_detail: response.body.status_detail,
-        response: response.body,
-      });
-    }
-  } catch (error) {
-    console.error('Erro ao processar pagamento:', error);
-    res.status(500).json({ error: 'Erro ao processar pagamento', details: error.message });
-  }
-});
-
-
-
-// Função para gerar o token do cartão
-async function generateCardToken({ cardNumber, cardName, expiryDate, cvv }) {
-    try {
-        // Divida a data de validade em mês e ano
-        const [month, year] = expiryDate.split('/');
-
-        // Corrige o ano para o formato de quatro dígitos
-        const formattedYear = year.length === 2 ? `20${year}` : year;
-
-        // Crie o corpo da requisição para o Mercado Pago
-        const requestBody = {
-            card_number: cardNumber,
-            cardholder: {
-                name: cardName
-            },
-            expiration_month: parseInt(month.trim()),
-            expiration_year: parseInt(formattedYear.trim()),
-            security_code: cvv,
-        };
-
-        // Faça a requisição para a API do Mercado Pago
-        const response = await fetch('https://api.mercadopago.com/v1/card_tokens', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`, // Access token do Mercado Pago
-            },
-            body: JSON.stringify(requestBody),
+        console.error('Erro ao processar pagamento:', error);
+        return res.status(500).json({
+            error: 'Erro ao processar pagamento',
+            details: error.message,
         });
-
-        const data = await response.json();
-        if (data && data.id) {
-            return data.id; // Retorne o token gerado
-        } else {
-            throw new Error('Falha ao gerar token do cartão: ' + (data.message || 'Erro desconhecido.'));
-        }
-    } catch (error) {
-        console.error('Erro ao gerar token do cartão:', error);
-        throw error;
-    }
-}
-
-// Endpoint para gerar o token do cartão
-app.post('/api/gerar-token-cartao', async (req, res) => {
-    try {
-        const { cardNumber, cardName, expiryDate, cvv } = req.body;
-
-        // Validação básica dos dados do cartão (opcional)
-        if (!cardNumber || !cardName || !expiryDate || !cvv) {
-            return res.status(400).json({ error: 'Todos os campos do cartão são obrigatórios.' });
-        }
-
-        // Gere o token do cartão
-        const token = await generateCardToken({ cardNumber, cardName, expiryDate, cvv });
-
-        // Retorne o token para o front-end
-        res.status(200).json({ token });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
     }
 });
 
