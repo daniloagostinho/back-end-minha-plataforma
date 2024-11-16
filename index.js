@@ -226,6 +226,9 @@ async function generateCardToken({ cardNumber, cardName, expiryDate, cvv }) {
         // Divida a data de validade em mês e ano
         const [month, year] = expiryDate.split('/');
 
+        // Corrige o ano para o formato de quatro dígitos
+        const formattedYear = year.length === 2 ? `20${year}` : year;
+
         // Crie o corpo da requisição para o Mercado Pago
         const requestBody = {
             card_number: cardNumber,
