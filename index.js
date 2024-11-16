@@ -162,57 +162,54 @@ app.post('/api/payment-method', async (req, res) => {
     }
 });
 
-// Rota para criar um pagamento com Cartão de Crédito
+// Endpoint para processar o pagamento com Cartão de Crédito
 app.post('/api/pagamento/cartao', async (req, res) => {
-    try {
-        const { transaction_amount, token, description, installments, payment_method_id, email } = req.body;
+  try {
+    const {
+      transaction_amount, // Valor da transação
+      token, // Token do cartão gerado no front-end
+      description, // Descrição do pagamento
+      installments, // Número de parcelas
+      payment_method_id, // Método de pagamento (e.g., visa, mastercard)
+      email, // E-mail do comprador
+    } = req.body;
 
-        // Validação simples de e-mail
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            return res.status(400).json({ error: 'E-mail inválido' });
-        }
+    // Cria o objeto de pagamento
+    const paymentData = {
+      transaction_amount: parseFloat(transaction_amount),
+      token: token,
+      description: description,
+      installments: parseInt(installments),
+      payment_method_id: payment_method_id,
+      payer: {
+        email: email,
+      },
+      external_reference: uuidv4(), // Referência única para identificar o pagamento
+    };
 
-        // Objeto de pagamento com cartão de crédito
-        const body = {
-            transaction_amount: parseFloat(transaction_amount),
-            token: token,
-            description: description,
-            installments: parseInt(installments),
-            payment_method_id: payment_method_id,
-            payer: { email: email },
-        };
+    const requestOptions = {
+      idempotencyKey: uuidv4(),
+    };
 
-        const requestOptions = {
-            idempotencyKey: uuidv4(),
-        };
+    // Faz a requisição para criar o pagamento
+    const response = await payment.create({ body: paymentData, requestOptions });
 
-        // Criar pagamento com Cartão de Crédito
-        const response = await payment.create({ body, requestOptions });
-
-        // Verifique o status da transação
-        if (response && response.body) {
-            const { status, status_detail } = response.body;
-
-            if (status === 'approved') {
-                res.status(200).json({ message: 'Pagamento aprovado', response });
-            } else {
-                // Retorne detalhes do motivo da rejeição
-                res.status(400).json({
-                    message: 'Pagamento não aprovado',
-                    status,
-                    status_detail,
-                    response,
-                });
-            }
-        } else {
-            res.status(500).json({ error: 'Resposta inesperada da API de pagamento', response });
-        }
-    } catch (error) {
-        console.error('Erro ao processar pagamento com cartão de crédito:', error);
-        res.status(500).json({ error: error.message });
+    // Verifica se o pagamento foi aprovado
+    if (response.body.status === 'approved') {
+      res.status(200).json({ message: 'Pagamento aprovado', response: response.body });
+    } else {
+      res.status(400).json({
+        message: 'Pagamento não aprovado',
+        status_detail: response.body.status_detail,
+        response: response.body,
+      });
     }
+  } catch (error) {
+    console.error('Erro ao processar pagamento:', error);
+    res.status(500).json({ error: 'Erro ao processar pagamento', details: error.message });
+  }
 });
+
 
 
 // Função para gerar o token do cartão
