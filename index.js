@@ -119,6 +119,7 @@ app.post('/api/pagamento/pix', async (req, res) => {
     }
 });
 
+// Endpoint para processar o pagamento
 app.post('/api/process_payment', async (req, res) => {
     const payment = new Payment(client);
 
