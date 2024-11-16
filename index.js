@@ -236,7 +236,7 @@ async function generateCardToken({ cardNumber, cardName, expiryDate, cvv }) {
                 name: cardName,
             },
             expiration_month: parseInt(month.trim()),
-            expiration_year: parseInt(year.trim()),
+            expiration_year: parseInt(formattedYear.trim()),
             security_code: cvv,
         };
 
