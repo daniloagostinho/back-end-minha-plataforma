@@ -126,17 +126,25 @@ app.post('/api/process_payment', async (req, res) => {
         // Criar pagamento com os dados enviados do front-end
         const response = await payment.create({ body: req.body });
 
-        if (response.body.status === 'approved') {
-            return res.status(200).json({
-                message: 'Pagamento aprovado',
-                status: response.body.status,
-                status_detail: response.body.status_detail,
-            });
+        // Verifica se o corpo da resposta está definido e possui status
+        if (response && response.body && response.body.status) {
+            if (response.body.status === 'approved') {
+                return res.status(200).json({
+                    message: 'Pagamento aprovado',
+                    status: response.body.status,
+                    status_detail: response.body.status_detail,
+                });
+            } else {
+                return res.status(400).json({
+                    message: 'Pagamento não aprovado',
+                    status: response.body.status,
+                    status_detail: response.body.status_detail,
+                });
+            }
         } else {
-            return res.status(400).json({
-                message: 'Pagamento não aprovado',
-                status: response.body.status,
-                status_detail: response.body.status_detail,
+            return res.status(500).json({
+                error: 'Resposta inesperada da API de pagamento',
+                details: response ? response.body : 'Sem detalhes disponíveis',
             });
         }
     } catch (error) {
