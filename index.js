@@ -114,7 +114,7 @@ app.post('/api/pagamento/pix', async (req, res) => {
             payment_method_id: 'pix',
             payer: { email: email },
             notification_url: 'https://back-end-minha-plataforma-app.vercel.app/webhook'
-        };
+        };  
 
 
         const requestOptions = {
@@ -219,6 +219,65 @@ app.post('/api/payment-method', async (req, res) => {
   }
 });
 
+
+// Função para gerar o token do cartão
+async function generateCardToken({ cardNumber, cardName, expiryDate, cvv }) {
+    try {
+        // Divida a data de validade em mês e ano
+        const [month, year] = expiryDate.split('/');
+
+        // Crie o corpo da requisição para o Mercado Pago
+        const requestBody = {
+            card_number: cardNumber,
+            cardholder: {
+                name: cardName,
+            },
+            expiration_month: parseInt(month.trim()),
+            expiration_year: parseInt(year.trim()),
+            security_code: cvv,
+        };
+
+        // Faça a requisição para a API do Mercado Pago
+        const response = await fetch('https://api.mercadopago.com/v1/card_tokens', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`, // Access token do Mercado Pago
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        const data = await response.json();
+        if (data && data.id) {
+            return data.id; // Retorne o token gerado
+        } else {
+            throw new Error('Falha ao gerar token do cartão: ' + (data.message || 'Erro desconhecido.'));
+        }
+    } catch (error) {
+        console.error('Erro ao gerar token do cartão:', error);
+        throw error;
+    }
+}
+
+// Endpoint para gerar o token do cartão
+app.post('/api/gerar-token-cartao', async (req, res) => {
+    try {
+        const { cardNumber, cardName, expiryDate, cvv } = req.body;
+
+        // Validação básica dos dados do cartão (opcional)
+        if (!cardNumber || !cardName || !expiryDate || !cvv) {
+            return res.status(400).json({ error: 'Todos os campos do cartão são obrigatórios.' });
+        }
+
+        // Gere o token do cartão
+        const token = await generateCardToken({ cardNumber, cardName, expiryDate, cvv });
+
+        // Retorne o token para o front-end
+        res.status(200).json({ token });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // Inicia o servidor
 const PORT = process.env.PORT || 5000;
