@@ -189,10 +189,17 @@ app.post('/api/pagamento/cartao', async (req, res) => {
 
         // Criar pagamento com Cartão de Crédito
         const response = await payment.create({ body, requestOptions });
-        if (response.body.status === 'approved') {
-            res.status(200).json({ message: 'Pagamento aprovado', response });
+
+        // Verifique se a estrutura da resposta é a esperada
+        if (response && response.body && response.body.status) {
+            if (response.body.status === 'approved') {
+                res.status(200).json({ message: 'Pagamento aprovado', response });
+            } else {
+                res.status(400).json({ message: 'Pagamento não aprovado', response });
+            }
         } else {
-            res.status(400).json({ message: 'Pagamento não aprovado', response });
+            // Se a resposta não tiver a estrutura esperada, retorne um erro genérico
+            res.status(500).json({ error: 'Resposta inesperada da API de pagamento', response });
         }
     } catch (error) {
         console.error('Erro ao processar pagamento com cartão de crédito:', error);
