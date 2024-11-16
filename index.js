@@ -190,15 +190,22 @@ app.post('/api/pagamento/cartao', async (req, res) => {
         // Criar pagamento com Cartão de Crédito
         const response = await payment.create({ body, requestOptions });
 
-        // Verifique se a estrutura da resposta é a esperada
-        if (response && response.body && response.body.status) {
-            if (response.body.status === 'approved') {
+        // Verifique o status da transação
+        if (response && response.body) {
+            const { status, status_detail } = response.body;
+
+            if (status === 'approved') {
                 res.status(200).json({ message: 'Pagamento aprovado', response });
             } else {
-                res.status(400).json({ message: 'Pagamento não aprovado', response });
+                // Retorne detalhes do motivo da rejeição
+                res.status(400).json({
+                    message: 'Pagamento não aprovado',
+                    status,
+                    status_detail,
+                    response,
+                });
             }
         } else {
-            // Se a resposta não tiver a estrutura esperada, retorne um erro genérico
             res.status(500).json({ error: 'Resposta inesperada da API de pagamento', response });
         }
     } catch (error) {
@@ -206,6 +213,7 @@ app.post('/api/pagamento/cartao', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
 
 // Função para gerar o token do cartão
 async function generateCardToken({ cardNumber, cardName, expiryDate, cvv }) {
