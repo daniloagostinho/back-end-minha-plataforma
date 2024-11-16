@@ -85,15 +85,6 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
 });
 
-// Rota para obter o usuário logado
-// app.get('/api/current_user', (req, res) => {
-//     if (req.user) {
-//         res.json(req.user);
-//     } else {
-//         res.status(401).json({ error: "Usuário não autenticado" });
-//     }
-// });
-
 // Rota para criar um pagamento com PIX
 app.post('/api/pagamento/pix', async (req, res) => {
     try {
