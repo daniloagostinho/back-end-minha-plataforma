@@ -148,7 +148,7 @@ app.post('/api/payment-method', async (req, res) => {
 
         const data = await response.json();
 
-        if (data && data[0]) {
+        if (data && data.length > 0) {
             // Se encontrar o método de pagamento, retorna o payment_method_id
             res.status(200).json({ paymentMethodId: data[0].id });
         } else {
@@ -161,7 +161,6 @@ app.post('/api/payment-method', async (req, res) => {
         res.status(500).json({ error: 'Erro ao obter o método de pagamento' });
     }
 });
-
 
 // Rota para criar um pagamento com Cartão de Crédito
 app.post('/api/pagamento/cartao', async (req, res) => {
@@ -200,30 +199,6 @@ app.post('/api/pagamento/cartao', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
-// Crie uma nova rota no seu backend para obter o método de pagamento
-app.post('/api/payment-method', async (req, res) => {
-  const { bin } = req.body;
-
-  try {
-    const response = await fetch(`https://api.mercadopago.com/v1/payment_methods?bin=${bin}`, {
-      headers: {
-        Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`, // Use seu accessToken do Mercado Pago
-      },
-    });
-
-    const data = await response.json();
-    if (data && data[0]) {
-      res.status(200).json({ paymentMethodId: data[0].id }); // Retorna o payment_method_id
-    } else {
-      res.status(404).json({ error: 'Método de pagamento não encontrado' });
-    }
-  } catch (error) {
-    console.error('Erro ao obter o método de pagamento:', error);
-    res.status(500).json({ error: 'Erro ao obter o método de pagamento' });
-  }
-});
-
 
 // Função para gerar o token do cartão
 async function generateCardToken({ cardNumber, cardName, expiryDate, cvv }) {
