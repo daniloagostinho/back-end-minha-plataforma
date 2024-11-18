@@ -122,35 +122,40 @@ app.post('/api/pagamento/pix', async (req, res) => {
 // Endpoint para processar o pagamento
 app.post('/api/process_payment', async (req, res) => {
     try {
-        const payment = new Payment(client);
-
-        // Verifica se os dados do formulário foram enviados corretamente
+        // Verificação dos dados do pagamento
         if (!req.body || !req.body.token || !req.body.transaction_amount || !req.body.payment_method_id || !req.body.payer) {
             return res.status(400).json({ error: 'Dados do pagamento incompletos' });
         }
 
-        // Cria o pagamento com os dados recebidos do front-end
-        const response = await payment.create({ body: req.body });
+        // Criação do pagamento
+        const payment_data = {
+            transaction_amount: req.body.transaction_amount,
+            token: req.body.token,
+            description: 'Descrição do produto',
+            installments: req.body.installments || 1,
+            payment_method_id: req.body.payment_method_id,
+            payer: {
+                email: req.body.payer.email,
+                identification: {
+                    type: req.body.payer.identification.type,
+                    number: req.body.payer.identification.number,
+                },
+            },
+        };
 
-        // Verifica se o pagamento foi aprovado ou não
-        if (response && response.body && response.body.status) {
-            if (response.body.status === 'approved') {
-                return res.status(200).json({
-                    message: 'Pagamento aprovado',
-                    status: response.body.status,
-                    status_detail: response.body.status_detail,
-                });
-            } else {
-                return res.status(400).json({
-                    message: 'Pagamento não aprovado',
-                    status: response.body.status,
-                    status_detail: response.body.status_detail,
-                });
-            }
+        const response = await mercadopago.payment.save(payment_data);
+
+        if (response.body.status === 'approved') {
+            return res.status(200).json({
+                message: 'Pagamento aprovado',
+                status: response.body.status,
+                status_detail: response.body.status_detail,
+            });
         } else {
-            return res.status(500).json({
-                error: 'Resposta inesperada da API de pagamento',
-                details: response ? response.body : 'Sem detalhes disponíveis',
+            return res.status(400).json({
+                message: 'Pagamento não aprovado',
+                status: response.body.status,
+                status_detail: response.body.status_detail,
             });
         }
     } catch (error) {
@@ -161,7 +166,6 @@ app.post('/api/process_payment', async (req, res) => {
         });
     }
 });
-
 
 // Inicia o servidor
 const PORT = process.env.PORT || 5000;
