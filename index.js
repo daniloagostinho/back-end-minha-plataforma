@@ -121,13 +121,18 @@ app.post('/api/pagamento/pix', async (req, res) => {
 
 // Endpoint para processar o pagamento
 app.post('/api/process_payment', async (req, res) => {
-    const payment = new Payment(client);
-
     try {
-        // Criar pagamento com os dados enviados do front-end
+        const payment = new Payment(client);
+
+        // Verifica se os dados do formulário foram enviados corretamente
+        if (!req.body || !req.body.token || !req.body.transaction_amount || !req.body.payment_method_id || !req.body.payer) {
+            return res.status(400).json({ error: 'Dados do pagamento incompletos' });
+        }
+
+        // Cria o pagamento com os dados recebidos do front-end
         const response = await payment.create({ body: req.body });
 
-        // Verifica se o corpo da resposta está definido e possui status
+        // Verifica se o pagamento foi aprovado ou não
         if (response && response.body && response.body.status) {
             if (response.body.status === 'approved') {
                 return res.status(200).json({
@@ -156,6 +161,7 @@ app.post('/api/process_payment', async (req, res) => {
         });
     }
 });
+
 
 // Inicia o servidor
 const PORT = process.env.PORT || 5000;
