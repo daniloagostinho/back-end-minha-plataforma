@@ -21,7 +21,6 @@
     "mercadopago": "^2.0.15",
     "mongoose": "^8.8.1",
     "passport": "^0.7.0",
-    "passport-google-oauth20": "^2.0.0",
     "uuid": "^11.0.3"
   }
 }
